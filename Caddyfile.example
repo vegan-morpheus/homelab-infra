@@ -1,0 +1,52 @@
+chat.yourdomain.com {
+	reverse_proxy open-webui:8080
+}
+
+(tinyauth) {
+	forward_auth tinyauth:3000 {
+		uri /api/auth/caddy
+	}
+}
+
+budget.yourdomain.com {
+	import tinyauth
+	reverse_proxy actual:5006
+}
+
+status.yourdomain.com {
+	import tinyauth
+	reverse_proxy uptime-kuma:3001
+}
+
+rss.yourdomain.com {
+	import tinyauth
+	reverse_proxy freshrss:80
+}
+
+notes.yourdomain.com {
+	import tinyauth
+	reverse_proxy memos:5230
+}
+
+tools.yourdomain.com {
+	import tinyauth
+	reverse_proxy it-tools:80
+}
+
+links.yourdomain.com {
+	import tinyauth
+	reverse_proxy linkwarden:3000
+}
+
+yourdomain.com {
+	import tinyauth
+	reverse_proxy homepage:3000
+}
+
+www.yourdomain.com {
+	redir https://yourdomain.com{uri}
+}
+
+auth.yourdomain.com {
+	reverse_proxy tinyauth:3000
+}

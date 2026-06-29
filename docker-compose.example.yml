@@ -1,0 +1,135 @@
+services:
+  hermes:
+    image: nousresearch/hermes-agent@sha256:<DIGEST>  # pinned for reproducible, deliberate updates
+    container_name: hermes
+    restart: always
+    command: gateway run
+    networks:
+      - hermes-net
+    volumes:
+      - hermes-data:/opt/data
+  tinyauth:
+    image: ghcr.io/steveiliop56/tinyauth:v3
+    container_name: tinyauth
+    restart: always
+    environment:
+      - APP_URL=https://auth.yourdomain.com
+      - SECRET=<GENERATE_WITH_openssl_rand_hex_32>
+      - USERS=admin:<BCRYPT_HASH_HERE>
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    networks:
+      - default
+      - hermes-net
+    restart: always
+    volumes:
+      - open-webui:/app/backend/data
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    networks:
+      - default
+      - hermes-net
+    restart: always
+    volumes:
+      - ./searxng:/etc/searxng
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080/
+  actual:
+    image: actualbudget/actual-server:latest
+    container_name: actual
+    restart: always
+    volumes:
+      - actual:/data
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: always
+    volumes:
+      - uptime-kuma:/app/data
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: always
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+    volumes:
+      - ./homepage:/app/config
+      - ./homepage/images:/app/public/images
+  freshrss:
+    image: freshrss/freshrss:latest
+    container_name: freshrss
+    restart: always
+    environment:
+      - TZ=America/Chicago
+      - CRON_MIN=3,33
+    volumes:
+      - freshrss:/var/www/FreshRSS/data
+  memos:
+    image: neosmemo/memos:stable
+    container_name: memos
+    restart: always
+    volumes:
+      - memos:/var/opt/memos
+  it-tools:
+    image: corentinth/it-tools:latest
+    container_name: it-tools
+    restart: always
+  linkwarden-db:
+    image: postgres:16-alpine
+    container_name: linkwarden-db
+    restart: always
+    environment:
+      - POSTGRES_USER=linkwarden
+      - POSTGRES_PASSWORD=<YOUR_DB_PASSWORD>
+      - POSTGRES_DB=linkwarden
+    volumes:
+      - linkwarden-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linkwarden"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  linkwarden:
+    image: ghcr.io/linkwarden/linkwarden:latest
+    container_name: linkwarden
+    restart: always
+    depends_on:
+      linkwarden-db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://linkwarden:<YOUR_DB_PASSWORD>@linkwarden-db:5432/linkwarden
+      - NEXTAUTH_SECRET=<GENERATE_WITH_openssl_rand_hex_32>
+      - NEXTAUTH_URL=https://links.yourdomain.com/api/v1/auth
+      - NEXT_PUBLIC_APP_URL=https://links.yourdomain.com
+      - NEXT_PUBLIC_DISABLE_REGISTRATION=true
+    volumes:
+      - linkwarden-data:/data/data
+volumes:
+  open-webui:
+  caddy_data:
+  caddy_config:
+  actual:
+  uptime-kuma:
+  freshrss:
+  memos:
+  linkwarden-data:
+  linkwarden-db-data:
+  hermes-data:
+    external: true
+    
+networks:
+  hermes-net:
+    external: true
