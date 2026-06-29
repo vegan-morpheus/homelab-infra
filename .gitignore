@@ -1,0 +1,19 @@
+# === Real config — NEVER commit these (publish only the .example versions) ===
+docker-compose.yml
+Caddyfile
+
+# === Environment / secrets files ===
+.env
+.env.*
+*.env
+
+# === Backups and key material ===
+*.bak
+*.key
+*.pem
+
+# === Belt-and-suspenders: anything with "secret" in the name ===
+*secret*
+
+# === macOS clutter ===
+.DS_Store
