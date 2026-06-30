@@ -1,0 +1,64 @@
+name: Validate Config
+
+# Run on every push and on PRs targeting the repo.
+on:
+  push:
+  pull_request:
+
+# Cancel older runs on the same branch if a new push comes in.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------
+  # 1. Validate the Docker Compose file is syntactically correct.
+  # ---------------------------------------------------------------
+  compose:
+    name: Validate docker-compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # docker compose v2 ships with the ubuntu-latest runner, so no install needed.
+      # `config` parses, interpolates, and validates the file; it fails on errors.
+      # `--quiet` suppresses the rendered output (we only care about the exit code).
+      - name: Validate compose syntax
+        run: docker compose -f docker-compose.example.yml config --quiet
+
+  # ---------------------------------------------------------------
+  # 2. Check the Caddyfile is properly formatted.
+  # ---------------------------------------------------------------
+  caddy:
+    name: Check Caddyfile formatting
+    runs-on: ubuntu-latest
+    container:
+      # Use the official Caddy image so the `caddy` binary is available.
+      image: caddy:2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # `caddy fmt --diff` prints a diff and exits non-zero if the file
+      # is not already formatted. This enforces consistent style.
+      - name: Check formatting
+        run: caddy fmt --diff Caddyfile.example
+
+  # ---------------------------------------------------------------
+  # 3. Scan the repo for accidentally committed secrets.
+  # ---------------------------------------------------------------
+  gitleaks:
+    name: Scan for secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history so gitleaks can scan past commits too.
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

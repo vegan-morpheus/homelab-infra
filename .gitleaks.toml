@@ -1,0 +1,21 @@
+# Extend gitleaks' built-in rules rather than replacing them.
+title = "gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore sanitized placeholders in example files"
+
+# Placeholders that intentionally appear in *.example files.
+regexes = [
+  '''<GENERATE_WITH_openssl_rand_hex_32>''',
+  '''<YOUR_DB_PASSWORD>''',
+  '''<BCRYPT_HASH_HERE>''',
+  '''<DIGEST>''',
+]
+
+# Optionally scope the allowlist to example files only.
+paths = [
+  '''.*\.example(\.[a-zA-Z0-9]+)?$''',
+]
