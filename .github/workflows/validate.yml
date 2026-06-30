@@ -57,17 +57,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Run the gitleaks CLI directly against the working tree.
-      # `dir` scans the current checked-out files (and full history).
-      # `--no-banner` keeps logs clean; `--verbose` shows findings.
-      # The container exits non-zero on any finding, failing the job.
+      # `detect` scans full git history with the built-in ruleset + our config.
+      # Exits non-zero on any finding (default), which fails the job.
+      # `--redact` keeps any found secret out of the public logs.
       - name: Run gitleaks
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/repo" \
             zricethezav/gitleaks:latest \
-            dir /repo \
+            detect \
+            --source /repo \
             --config /repo/.gitleaks.toml \
             --no-banner \
             --verbose \
-            --exit-code 1
+            --redact
