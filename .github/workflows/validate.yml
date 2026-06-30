@@ -55,10 +55,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Fetch full history so gitleaks can scan past commits too.
           fetch-depth: 0
 
+      # Run the gitleaks CLI directly against the working tree.
+      # `dir` scans the current checked-out files (and full history).
+      # `--no-banner` keeps logs clean; `--verbose` shows findings.
+      # The container exits non-zero on any finding, failing the job.
       - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            zricethezav/gitleaks:latest \
+            dir /repo \
+            --config /repo/.gitleaks.toml \
+            --no-banner \
+            --verbose \
+            --exit-code 1
